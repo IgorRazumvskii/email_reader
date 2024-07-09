@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Reader</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Список сообщений</h1>
+    <div>
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <span id="progress-text">Чтение сообщений...</span>
+    </div>
+    <table id="emails-table">
+        <thead>
+            <tr>
+                <th>Тема сообщения</th>
+                <th>Дата отправки</th>
+                <th>Дата получения</th>
+                <th>Описание</th>
+                <th>Вложения</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/fetch-emails/');
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            $('#progress-text').text(data.message);
+            const progress = data.message.match(/(\d+)%/)[1];
+            $('#progress-bar').val(progress);
+        };
+
+        function fetchEmails() {
+            $.ajax({
+                url: '/api/fetch-emails/',
+                method: 'POST',
+                data: {
+                    email: 'your-email@example.com',
+                    password: 'yourpassword'
+                },
+                success: function(response) {
+                    response.forEach(email => {
+                        $('#emails-table tbody').append(`
+                            <tr>
+                                <td>${email.subject}</td>
+                                <td>${email.send_date}</td>
+                                <td>${email.received_date}</td>
+                                <td>${email.body}</td>
+                                <td>${email.attachments.join(', ')}</td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            fetchEmails();
+        });
+    </script>
+</body>
+</html>
